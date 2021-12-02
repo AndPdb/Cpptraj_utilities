@@ -105,7 +105,7 @@ quit"""
 
 
 
-def hbonds(avghb, frac=0.4):
+def intra_hbonds(avghb, frac=0.4):
     """Return a DataFrame with HBonds with avg duration higher than a percentage (default 0.4)"""
     df = pd.read_csv(avghb, delim_whitespace=True)
     hb = df[df.Frac >= frac]
@@ -113,7 +113,7 @@ def hbonds(avghb, frac=0.4):
     hb = hb[(hb['Acceptor'].str.endswith('@O') == False) & (hb['Donor'].str.endswith('@N') == False)]
     return hb.sort_values('Frac', ascending=False)
 
-def hbonds_lig(avghb, lig, frac=0.4):
+def lig_hbonds(avghb, lig, frac=0.4):
     """Return a DataFrame with the ligand HBonds with avg duration higher than a percentage (default 0.4)"""
     df = pd.read_csv(avghb, delim_whitespace=True)
     hb = df[df.Frac >= frac]
@@ -123,10 +123,16 @@ def hbonds_lig(avghb, lig, frac=0.4):
     hb_lig = pd.concat([hb_lig1, hb_lig2], ignore_index=True)
     return hb_lig.sort_values('Frac', ascending=False)
 
-def lig_saltbridges(path1, path2):
+def lig_saltbridges(path1, path2=None):
     first = pd.read_csv(path1,  delim_whitespace=True)
-    second = pd.read_csv(path2,  delim_whitespace=True)
-    df = pd.concat([first, second], ignore_index=True)
+    try:
+        second = pd.read_csv(path2,  delim_whitespace=True)
+    except:
+        second = None
+    if second == None:
+        df = first
+    else:
+        df = pd.concat([first, second], ignore_index=True)
     df = df.sort_values('Frac', ascending=False)
     return df.reset_index(drop=True)
 
@@ -154,9 +160,9 @@ def solv_bridges(path):
     #df_sb = df_sb[df_sb.Frac >= frac]
     return df_sb.sort_values('Frames', ascending=False)
 
-def contacts(contacts, frac=0.2, avg=4.5):
+def contacts(contacts, notnative, frac=0.2, avg=4.5):
     """General parser for contacts.dat with variable Frac and Avg"""
-    df = pd.read_csv(contacts, delim_whitespace=True, skiprows=2)
+    df = pd.read_csv(contacts, delim_whitespace=True, skiprows=[0,1,notnative])
     df['Frac.'] = pd.to_numeric(df['Frac.'], errors='coerce')
     df['Nframes'] = pd.to_numeric(df['Nframes'], errors='coerce')
     df['Avg'] = pd.to_numeric(df['Avg'], errors='coerce')
@@ -225,6 +231,7 @@ def rmsd(rmsd):
 # PLOT TIMESERIES
 
 def dfseries_sb(path):
+    
     try:
         dfsb1_1 = pd.read_csv(f"{path}/uuhbonds_1.dat", delim_whitespace=True)
     except FileNotFoundError:
@@ -249,13 +256,30 @@ def dfseries_sb(path):
         print("Series not present")
     return dfsb1
 
+
+
 def dfseries_hp(path):
-    dfhp1_1 =pd.read_csv(f"{path}/series.dat", delim_whitespace=True)
-    dfhp1_1 = dfhp1_1.rename(columns={"#Frame": "Frame"})
-    dfhp1_2 = pd.read_csv(f"{path}/nnseries.dat", delim_whitespace=True)
-    dfhp1_2 = dfhp1_2.drop(['#Frame'], axis=1)
-    dfhp1 = pd.concat([dfhp1_1, dfhp1_2], axis=1)
+    
+    try:
+        dfhp1_1 =pd.read_csv(f"{path}/series.dat", delim_whitespace=True)
+        dfhp1_1 = dfhp1_1.rename(columns={"#Frame": "Frame"})
+    except:
+        dfhp1_1 = None
+    try:
+        dfhp1_2 = pd.read_csv(f"{path}/nnseries.dat", delim_whitespace=True)
+        dfhp1_2 = dfhp1_2.drop(['#Frame'], axis=1)
+    except:
+        dfhp1_2 = None
+        
+    if dfhp1_1 == None:
+        dfhp1 = dfhp1_2
+    elif dfhp1_2 == None:
+        dfhp1 = dfhp1_1
+    else:    
+        dfhp1 = pd.concat([dfhp1_1, dfhp1_2], axis=1)
     return dfhp1
+
+
 
 def df_4catplot(df, ligname, interaction, resinfo=None):
     '''Convert normal dataframe(from hbonds, salt_bridge, hydrophobic analyses) to df useful for catplot. Needs type of interction and a df "resinfo" describing resname and numbers (from resinfo command in cpptraj)'''
