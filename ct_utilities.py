@@ -259,25 +259,30 @@ def dfseries_sb(path):
 
 
 def dfseries_hp(path):
-    df1_1 = True
-    df1_2 = True
+    dfhp1=True
+    dfhp2=True
     try:
-        dfhp1_1 = pd.read_csv(f"{path}/series.dat", delim_whitespace=True)
+        dfhp1_1 =pd.read_csv(f"{path}/series.dat", delim_whitespace=True)
         dfhp1_1 = dfhp1_1.rename(columns={"#Frame": "Frame"})
     except:
-        df1_1 = False
+        dfhp1 = False
+    
     try:
         dfhp1_2 = pd.read_csv(f"{path}/nnseries.dat", delim_whitespace=True)
-        dfhp1_2 = dfhp1_2.drop(['#Frame'], axis=1)
+        dfhp1_2 = dfhp1_2.rename(columns={"#Frame": "Frame"})
     except:
-        df1_2 = False
-        
-    if df1_1 == False:
+        dfhp2 = False
+
+    if dfhp1 == False:
         dfhp1 = dfhp1_2
-    elif df1_2 == False:
+    
+    elif dfhp1_2 == False:
         dfhp1 = dfhp1_1
-    else:    
+    
+    else:
+        dfhp1_2 = dfhp1_2.drop(['Frame'], axis=1)
         dfhp1 = pd.concat([dfhp1_1, dfhp1_2], axis=1)
+   
     return dfhp1
 
 
